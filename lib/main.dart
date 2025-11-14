@@ -4,7 +4,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 void main() {
   runApp(const DreamLifeApp());
 }
-
 class DreamLifeApp extends StatelessWidget {
   const DreamLifeApp({super.key});
 
@@ -14,7 +13,6 @@ class DreamLifeApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: "Dream Life",
       themeMode: ThemeMode.system,
-
       theme: ThemeData(
         brightness: Brightness.light,
         scaffoldBackgroundColor: const Color(0xfff5f7fa),
@@ -32,9 +30,7 @@ class DreamLifeApp extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------
-// BOTTOM NAVIGATION
-// -----------------------------------------------------
+
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 
@@ -78,9 +74,7 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 }
 
-// -----------------------------------------------------
-// HOME SCREEN (DISCOVER)
-// -----------------------------------------------------
+
 class DiscoverScreen extends StatelessWidget {
   DiscoverScreen({super.key});
 
