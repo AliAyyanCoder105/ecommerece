@@ -152,6 +152,7 @@ class DiscoverScreen extends StatelessWidget {
                       },
                     )
                   ),
+                  //
                   const SizedBox(height: 25),
                   _buildSectionTitle("Most Popular", () {}),
                   const SizedBox(height: 12),
