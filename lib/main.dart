@@ -8,6 +8,61 @@ import 'dart:async';
 //   google_fonts: ^6.1.0
 //   flutter_animate: ^4.5.0
 
+// --- Data Model for Cart Item ---
+class CartItem {
+  final String title;
+  final String price;
+  final String img;
+  int quantity;
+
+  CartItem({required this.title, required this.price, required this.img, this.quantity = 1});
+}
+
+// --- Simple Cart State Manager ---
+class CartService {
+  static final CartService _instance = CartService._internal();
+  factory CartService() => _instance;
+  CartService._internal();
+
+  final List<CartItem> _items = [];
+  List<CartItem> get items => _items;
+
+  void add(CartItem item) {
+    // Check if item already exists
+    for (var cartItem in _items) {
+      if (cartItem.title == item.title) {
+        cartItem.quantity += item.quantity;
+        return;
+      }
+    }
+    _items.add(item);
+  }
+
+  void remove(CartItem item) {
+    _items.remove(item);
+  }
+
+  void increment(CartItem item) {
+    item.quantity++;
+  }
+
+  void decrement(CartItem item) {
+    if (item.quantity > 1) {
+      item.quantity--;
+    }
+  }
+
+  double getTotalPrice() {
+    return _items.fold(0, (total, current) {
+      final price = double.tryParse(current.price.replaceAll('\$', '')) ?? 0;
+      return total + (price * current.quantity);
+    });
+  }
+}
+
+final cartService = CartService();
+
+
 void main() {
   runApp(const DreamLifeApp());
 }
@@ -68,9 +123,21 @@ class _MainNavigationState extends State<MainNavigation> {
   static final List<Widget> _screens = <Widget>[
     DiscoverScreen(),
     const CategoriesScreen(),
-    const CartScreen(),
+    CartScreen(), // Changed to a stateful widget
     const ProfileScreen(),
   ];
+
+  void _onNavigate(int index) {
+    // A little trick to refresh cart screen when selected
+    if (index == 2) {
+      setState(() {
+        _selectedIndex = index;
+      });
+    } else {
+      setState(() => _selectedIndex = index);
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +150,7 @@ class _MainNavigationState extends State<MainNavigation> {
         height: 80,
         elevation: 0,
         selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+        onDestinationSelected: _onNavigate,
         indicatorColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: "Home"),
@@ -141,16 +208,16 @@ class DiscoverScreen extends StatelessWidget {
                   _buildSectionTitle("Categories", () {}),
                   const SizedBox(height: 12),
                   SizedBox(
-                    height: 110,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: categoryData.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 14),
-                      itemBuilder: (context, i) {
-                        final c = categoryData[i];
-                        return _categoryCard(context, c["title"]!, c["img"]!);
-                      },
-                    )
+                      height: 110,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: categoryData.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 14),
+                        itemBuilder: (context, i) {
+                          final c = categoryData[i];
+                          return _categoryCard(context, c["title"]!, c["img"]!);
+                        },
+                      )
                   ),
                   //
                   const SizedBox(height: 25),
@@ -224,7 +291,10 @@ class DiscoverScreen extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(img, height: 45),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12.0),
+            child: Image.asset(img, height: 45),
+          ),
           const SizedBox(height: 10),
           Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
         ],
@@ -330,9 +400,12 @@ class _FeaturedBannerCarouselState extends State<FeaturedBannerCarousel> {
               ],
             ),
           ),
-          Image.asset(imagePath, height: 100, fit: BoxFit.contain)
-              .animate(onPlay: (c) => c.repeat(reverse: true))
-              .moveY(begin: -5, end: 5, duration: 2000.ms, curve: Curves.easeInOut)
+          ClipRRect( // Rounded corners for the banner image
+              borderRadius: BorderRadius.circular(12.0),
+              child: Image.asset(imagePath, height: 100, fit: BoxFit.contain)
+                  .animate(onPlay: (c) => c.repeat(reverse: true))
+                  .moveY(begin: -5, end: 5, duration: 2000.ms, curve: Curves.easeInOut)
+          ),
         ],
       ),
     );
@@ -536,6 +609,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
             onPressed: () {
+              final item = CartItem(title: widget.title, price: widget.price, img: widget.img, quantity: _quantity);
+              cartService.add(item);
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Added to Cart!"), backgroundColor: Colors.green));
             },
             icon: const Icon(Icons.shopping_cart_outlined),
@@ -559,37 +634,178 @@ class CategoriesScreen extends StatelessWidget {
   }
 }
 
-class CartScreen extends StatelessWidget {
-  const CartScreen({super.key});
+class CartScreen extends StatefulWidget {
+  @override
+  _CartScreenState createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  void _updateCart() {
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
+    final cartItems = cartService.items;
+
     return Scaffold(
       appBar: AppBar(title: const Text("My Cart", style: TextStyle(fontWeight: FontWeight.bold))),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey.shade400),
-            const SizedBox(height: 20),
-            Text("Your Cart is Empty", style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            Text("Looks like you haven't added\nanything to your cart yet.", style: TextStyle(color: Colors.grey.shade600, fontSize: 16), textAlign: TextAlign.center),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () {}, // Navigate to Discover Screen
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-              ),
-              child: const Text("Start Shopping"),
+      body: cartItems.isEmpty
+          ? _buildEmptyCartView(context)
+          : _buildCartListView(cartItems, context),
+      bottomNavigationBar: cartItems.isNotEmpty ? _buildCartSummary(context) : null,
+    );
+  }
+
+  Widget _buildEmptyCartView(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey.shade400),
+          const SizedBox(height: 20),
+          Text("Your Cart is Empty", style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          Text("Looks like you haven't added\nanything to your cart yet.", style: TextStyle(color: Colors.grey.shade600, fontSize: 16), textAlign: TextAlign.center),
+          const SizedBox(height: 30),
+          ElevatedButton(
+            onPressed: () {
+              // This is a placeholder. A better implementation would use a proper navigation service.
+              // For now, we assume the user can use the bottom navigation to go back to shopping.
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
             ),
-          ],
-        ).animate().fade(duration: 500.ms).scale(begin: const Offset(0.8, 0.8)),
+            child: const Text("Start Shopping"),
+          ),
+        ],
+      ).animate().fade(duration: 500.ms).scale(begin: const Offset(0.8, 0.8)),
+    );
+  }
+
+  Widget _buildCartListView(List<CartItem> cartItems, BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.all(20),
+      itemCount: cartItems.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 15),
+      itemBuilder: (context, index) {
+        final item = cartItems[index];
+        return _buildCartItemCard(item, context);
+      },
+    );
+  }
+
+  Widget _buildCartItemCard(CartItem item, BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 5))],
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12.0),
+            child: Image.asset(item.img, width: 80, height: 80, fit: BoxFit.cover),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), maxLines: 1),
+                const SizedBox(height: 5),
+                Text(item.price, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _quantityButton(Icons.remove, () {
+                      cartService.decrement(item);
+                      _updateCart();
+                    }),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 15),
+                      child: Text(item.quantity.toString(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
+                    _quantityButton(Icons.add, () {
+                      cartService.increment(item);
+                      _updateCart();
+                    }),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.delete_outline, color: Colors.redAccent),
+            onPressed: () {
+              cartService.remove(item);
+              _updateCart();
+            },
+          ),
+        ],
+      ),
+    ).animate().fade().slideX(begin: -0.2);
+  }
+
+  Widget _quantityButton(IconData icon, VoidCallback onPressed) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 30, height: 30,
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Icon(icon, size: 16),
       ),
     );
   }
+
+  Widget _buildCartSummary(BuildContext context) {
+    return Container(
+      height: 120,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Total Price", style: TextStyle(color: Colors.grey, fontSize: 14)),
+              Text(
+                "\$${cartService.getTotalPrice().toStringAsFixed(2)}",
+                style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+            onPressed: () {},
+            child: const Text("Checkout", style: TextStyle(fontSize: 16)),
+          )
+        ],
+      ),
+    ).animate().fade(delay: 200.ms).slideY(begin: 1, duration: 400.ms);
+  }
 }
+
+
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
