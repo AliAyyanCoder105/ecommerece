@@ -14,7 +14,7 @@ class CartItem {
   CartItem({required this.title, required this.price, required this.img, this.quantity = 1});
 }
 
-// --- Cart Service ---
+// --- Cart Service (Singleton) ---
 class CartService {
   static final CartService _instance = CartService._internal();
   factory CartService() => _instance;
@@ -122,8 +122,8 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
   final List<Widget> _screens = [
-    DiscoverScreen(),
-    const CategoriesScreen(),
+    const DiscoverScreen(),
+    const CategoriesScreen(), // Updated to new Grid Screen
     CartScreen(),
     const ProfileScreen(),
   ];
@@ -190,19 +190,17 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 }
 
-// --- Discover Screen ---
-class DiscoverScreen extends StatelessWidget {
-  DiscoverScreen({super.key});
+// --- Discover Screen (With Search) ---
+class DiscoverScreen extends StatefulWidget {
+  const DiscoverScreen({super.key});
 
-  // IMPORTANT: Ensure these files exist in assets/images/
-  final categoryData = [
-    {"title": "Armchairs", "img": "assets/images/chair1.png"},
-    {"title": "Lamps", "img": "assets/images/lamp1.png"},
-    {"title": "Dining", "img": "assets/images/table1.png"},
-    {"title": "Decor", "img": "assets/images/vase1.png"},
-  ];
+  @override
+  State<DiscoverScreen> createState() => _DiscoverScreenState();
+}
 
-  final productData = [
+class _DiscoverScreenState extends State<DiscoverScreen> {
+  // Master Data
+  final List<Map<String, dynamic>> _allProducts = const [
     {"title": "Noir Velvet Sofa", "price": "\$1,299", "rating": 4.9, "img": "assets/images/sofa_black.png"},
     {"title": "Industrial Lamp", "price": "\$189", "rating": 4.6, "img": "assets/images/lamp2.png"},
     {"title": "Eames Classic", "price": "\$2,400", "rating": 5.0, "img": "assets/images/chair2.png"},
@@ -211,94 +209,357 @@ class DiscoverScreen extends StatelessWidget {
     {"title": "Accent Vase", "price": "\$89", "rating": 4.5, "img": "assets/images/vase2.png"},
   ];
 
+  final categoryData = const [
+    {"title": "Armchairs", "img": "assets/images/chair1.png"},
+    {"title": "Lamps", "img": "assets/images/lamp1.png"},
+    {"title": "Dining", "img": "assets/images/table1.png"},
+    {"title": "Decor", "img": "assets/images/vase1.png"},
+  ];
+
+  List<Map<String, dynamic>> _foundProducts = [];
+  bool _isSearching = false;
+
+  @override
+  void initState() {
+    _foundProducts = _allProducts;
+    super.initState();
+  }
+
+  void _runFilter(String enteredKeyword) {
+    List<Map<String, dynamic>> results = [];
+    if (enteredKeyword.isEmpty) {
+      results = _allProducts;
+      _isSearching = false;
+    } else {
+      results = _allProducts
+          .where((product) => product["title"].toLowerCase().contains(enteredKeyword.toLowerCase()))
+          .toList();
+      _isSearching = true;
+    }
+
+    setState(() {
+      _foundProducts = results;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              backgroundColor: kBgColor,
+              elevation: 0,
+              floating: true,
+              centerTitle: true,
+              title: Text("DREAM LIFE", style: GoogleFonts.cinzel(fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 4, color: kTextColor)),
+              actions: [
+                IconButton(onPressed: (){}, icon: const Icon(Icons.notifications_none, color: kTextColor))
+              ],
+              leading: IconButton(onPressed: (){}, icon: const Icon(Icons.menu, color: kTextColor)),
+            ),
+
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Search Bar
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 15),
+                      decoration: BoxDecoration(
+                        color: kCardColor,
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(color: Colors.white10),
+                      ),
+                      child: TextField(
+                        onChanged: (value) => _runFilter(value),
+                        style: const TextStyle(color: Colors.white),
+                        decoration: const InputDecoration(
+                            hintText: "Search luxury furniture...",
+                            hintStyle: TextStyle(color: Colors.grey),
+                            border: InputBorder.none,
+                            icon: Icon(Icons.search, color: Colors.grey)
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+
+                    // Show Banner only if NOT searching
+                    if (!_isSearching) ...[
+                      const HeroBanner(),
+                      const SizedBox(height: 35),
+                      const SectionHeader(title: "Collections"),
+                      const SizedBox(height: 15),
+                      SizedBox(
+                        height: 110,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: categoryData.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 20),
+                          itemBuilder: (context, i) => _CategoryItem(
+                              title: categoryData[i]['title']!,
+                              img: categoryData[i]['img']!
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 35),
+                      const SectionHeader(title: "New Arrivals"),
+                    ] else ...[
+                      Row(children: [const Icon(Icons.filter_list, color: kGoldColor), const SizedBox(width: 8), Text("Found ${_foundProducts.length} items", style: const TextStyle(color: kGoldColor))]),
+                      const SizedBox(height: 15),
+                    ]
+                  ],
+                ),
+              ),
+            ),
+
+            // Products Grid
+            _foundProducts.isEmpty
+                ? SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.search_off, size: 60, color: Colors.white.withOpacity(0.2)),
+                    const SizedBox(height: 10),
+                    const Text("No items found", style: TextStyle(color: Colors.grey)),
+                  ],
+                ),
+              ),
+            )
+                : SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.60,
+                  mainAxisSpacing: 20,
+                  crossAxisSpacing: 20,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                      (context, i) => DarkProductCard(data: _foundProducts[i]),
+                  childCount: _foundProducts.length,
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ).animate().fadeIn(duration: 800.ms),
+      ),
+    );
+  }
+}
+
+// --- Categories Screen (Grid Layout) ---
+class CategoriesScreen extends StatelessWidget {
+  const CategoriesScreen({super.key});
+
+  final List<Map<String, String>> categories = const [
+    {"title": "Living Room", "img": "assets/images/sofa_black.png", "count": "45 Items"},
+    {"title": "Lighting", "img": "assets/images/lamp2.png", "count": "28 Items"},
+    {"title": "Dining", "img": "assets/images/table1.png", "count": "15 Items"},
+    {"title": "Bedroom", "img": "assets/images/bed1.png", "count": "32 Items"},
+    {"title": "Decor", "img": "assets/images/vase2.png", "count": "64 Items"},
+    {"title": "Chairs", "img": "assets/images/chair2.png", "count": "18 Items"},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: kBgColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             backgroundColor: kBgColor,
             elevation: 0,
-            floating: true,
+            pinned: true,
             centerTitle: true,
-            title: Text("DREAM LIFE", style: GoogleFonts.cinzel(fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 4, color: kTextColor)),
-            actions: [
-              IconButton(onPressed: (){}, icon: const Icon(Icons.notifications_none, color: kTextColor))
-            ],
-            leading: IconButton(onPressed: (){}, icon: const Icon(Icons.menu, color: kTextColor)),
-          ),
-
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 15),
-                    decoration: BoxDecoration(
-                      color: kCardColor,
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: Colors.white10),
-                    ),
-                    child: const TextField(
-                      style: TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                          hintText: "Search luxury furniture...",
-                          hintStyle: TextStyle(color: Colors.grey),
-                          border: InputBorder.none,
-                          icon: Icon(Icons.search, color: Colors.grey)
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-
-                  const HeroBanner(),
-                  const SizedBox(height: 35),
-
-                  const SectionHeader(title: "Collections"),
-                  const SizedBox(height: 15),
-                  SizedBox(
-                    height: 110,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: categoryData.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 20),
-                      itemBuilder: (context, i) => _CategoryItem(
-                          title: categoryData[i]['title']!,
-                          img: categoryData[i]['img']!
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 35),
-                  const SectionHeader(title: "New Arrivals"),
-                ],
-              ),
+            title: Text("COLLECTIONS",
+                style: GoogleFonts.cinzel(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 3,
+                    color: kTextColor
+                )
             ),
           ),
-
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.all(20),
             sliver: SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                childAspectRatio: 0.60,
+                childAspectRatio: 0.85,
                 mainAxisSpacing: 20,
                 crossAxisSpacing: 20,
               ),
               delegate: SliverChildBuilderDelegate(
-                    (context, i) => DarkProductCard(data: productData[i]),
-                childCount: productData.length,
+                    (context, index) {
+                  return _CategoryCard(data: categories[index], index: index);
+                },
+                childCount: categories.length,
               ),
             ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
-      ).animate().fadeIn(duration: 800.ms),
+      ),
     );
   }
 }
+
+class _CategoryCard extends StatelessWidget {
+  final Map<String, String> data;
+  final int index;
+  const _CategoryCard({required this.data, required this.index});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => CategoryListingScreen(categoryName: data['title']!))
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          image: DecorationImage(
+            image: AssetImage(data['img']!),
+            fit: BoxFit.cover,
+          ),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.5),
+                blurRadius: 10,
+                offset: const Offset(0, 5)
+            )
+          ],
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              colors: [Colors.black.withOpacity(0.9), Colors.transparent],
+              begin: Alignment.bottomCenter,
+              end: Alignment.center,
+            ),
+          ),
+          padding: const EdgeInsets.all(15),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                data['title']!.toUpperCase(),
+                style: GoogleFonts.cinzel(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14
+                ),
+              ),
+              const SizedBox(height: 5),
+              Row(
+                children: [
+                  Container(width: 30, height: 1, color: kGoldColor),
+                  const SizedBox(width: 8),
+                  Text(
+                    data['count']!,
+                    style: const TextStyle(color: kGoldColor, fontSize: 10),
+                  ),
+                ],
+              )
+            ],
+          ),
+        ),
+      ).animate().fadeIn(duration: 600.ms, delay: (100 * index).ms).slideY(begin: 0.2, end: 0),
+    );
+  }
+}
+
+// --- Category Listing Screen (Sub-screen) ---
+class CategoryListingScreen extends StatelessWidget {
+  final String categoryName;
+  const CategoryListingScreen({super.key, required this.categoryName});
+
+  final List<Map<String, dynamic>> _categoryProducts = const [
+    {"title": "Noir Velvet Sofa", "price": "\$1,299", "rating": 4.9, "img": "assets/images/sofa_black.png"},
+    {"title": "Obsidian Table", "price": "\$850", "rating": 4.7, "img": "assets/images/table1.png"},
+    {"title": "Eames Classic", "price": "\$2,400", "rating": 5.0, "img": "assets/images/chair2.png"},
+    {"title": "Accent Vase", "price": "\$89", "rating": 4.5, "img": "assets/images/vase2.png"},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: kBgColor,
+      appBar: AppBar(
+        backgroundColor: kBgColor,
+        elevation: 0,
+        centerTitle: true,
+        title: Text(categoryName.toUpperCase(), style: GoogleFonts.cinzel(color: kTextColor, fontWeight: FontWeight.bold)),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(20),
+        itemCount: _categoryProducts.length,
+        itemBuilder: (context, index) {
+          final data = _categoryProducts[index];
+          return Container(
+            margin: const EdgeInsets.only(bottom: 20),
+            height: 120,
+            decoration: BoxDecoration(
+              color: kCardColor,
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: Colors.white10),
+            ),
+            child: GestureDetector(
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetailScreen(data: data))),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.horizontal(left: Radius.circular(15)),
+                    child: Image.asset(data['img'], width: 120, height: 120, fit: BoxFit.cover),
+                  ),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(data['title'], style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 5),
+                        Row(children: [
+                          const Icon(Icons.star, color: kGoldColor, size: 14),
+                          const SizedBox(width: 5),
+                          Text("${data['rating']}", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                        ]),
+                        const SizedBox(height: 10),
+                        Text(data['price'], style: const TextStyle(color: kGoldColor, fontSize: 18, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.only(right: 20),
+                    child: Icon(Icons.arrow_forward_ios, color: Colors.white24, size: 16),
+                  )
+                ],
+              ),
+            ),
+          ).animate().slideX(begin: 1, delay: (100 * index).ms);
+        },
+      ),
+    );
+  }
+}
+
+// --- Reusable Widgets ---
 
 class SectionHeader extends StatelessWidget {
   final String title;
@@ -309,13 +570,12 @@ class SectionHeader extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title, style: Theme.of(context).textTheme.displayMedium?.copyWith(fontSize: 22)),
-        Text("See All", style: TextStyle(color: kGoldColor, fontWeight: FontWeight.bold)),
+        const Text("See All", style: TextStyle(color: kGoldColor, fontWeight: FontWeight.bold)),
       ],
     );
   }
 }
 
-// --- Dark Luxury Product Card (With AssetImage) ---
 class DarkProductCard extends StatelessWidget {
   final Map<String, dynamic> data;
   const DarkProductCard({super.key, required this.data});
@@ -336,7 +596,6 @@ class DarkProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image
             Expanded(
               flex: 10,
               child: Stack(
@@ -347,7 +606,7 @@ class DarkProductCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                         image: DecorationImage(
-                            image: AssetImage(data['img']), // CHANGED TO ASSET IMAGE
+                            image: AssetImage(data['img']),
                             fit: BoxFit.cover
                         ),
                       ),
@@ -364,7 +623,6 @@ class DarkProductCard extends StatelessWidget {
                 ],
               ),
             ),
-            // Details
             Expanded(
               flex: 6,
               child: Padding(
@@ -406,7 +664,6 @@ class DarkProductCard extends StatelessWidget {
   }
 }
 
-// --- Category Item (With AssetImage) ---
 class _CategoryItem extends StatelessWidget {
   final String title, img;
   const _CategoryItem({required this.title, required this.img});
@@ -420,7 +677,7 @@ class _CategoryItem extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             image: DecorationImage(
-                image: AssetImage(img), // CHANGED TO ASSET IMAGE
+                image: AssetImage(img),
                 fit: BoxFit.cover
             ),
             border: Border.all(color: kCardColor, width: 2),
@@ -434,7 +691,6 @@ class _CategoryItem extends StatelessWidget {
   }
 }
 
-// --- Hero Banner (With AssetImage) ---
 class HeroBanner extends StatelessWidget {
   const HeroBanner({super.key});
 
@@ -448,7 +704,6 @@ class HeroBanner extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(25),
             image: const DecorationImage(
-              // IMPORTANT: Make sure this file exists
               image: AssetImage("assets/images/banner.png"),
               fit: BoxFit.cover,
             ),
@@ -486,7 +741,7 @@ class HeroBanner extends StatelessWidget {
   }
 }
 
-// --- Product Detail Screen (With AssetImage & Pixel Fix) ---
+// --- Product Detail Screen ---
 class ProductDetailScreen extends StatefulWidget {
   final Map<String, dynamic> data;
   const ProductDetailScreen({super.key, required this.data});
@@ -511,7 +766,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               width: double.infinity,
               decoration: BoxDecoration(
                 image: DecorationImage(
-                    image: AssetImage(widget.data['img']), // CHANGED TO ASSET IMAGE
+                    image: AssetImage(widget.data['img']),
                     fit: BoxFit.cover
                 ),
               ),
@@ -587,7 +842,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   Text("Description", style: GoogleFonts.lato(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
 
-                  // FIXED SCROLLABLE TEXT
                   Expanded(
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
@@ -656,7 +910,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 }
 
-// --- Cart Screen (With AssetImage) ---
+// --- Cart Screen ---
 class CartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -701,7 +955,7 @@ class CartScreen extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(15),
                                   image: DecorationImage(
-                                      image: AssetImage(item.img), // CHANGED TO ASSET IMAGE
+                                      image: AssetImage(item.img),
                                       fit: BoxFit.cover
                                   ),
                                 ),
@@ -777,7 +1031,7 @@ class CartScreen extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.shopping_bag_outlined, size: 80, color: Colors.white12),
+          const Icon(Icons.shopping_bag_outlined, size: 80, color: Colors.white12),
           const SizedBox(height: 20),
           Text("Your Cart is Empty", style: GoogleFonts.cinzel(fontSize: 20, color: Colors.grey)),
         ],
@@ -786,18 +1040,7 @@ class CartScreen extends StatelessWidget {
   }
 }
 
-class CategoriesScreen extends StatelessWidget {
-  const CategoriesScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Collections"), backgroundColor: Colors.transparent),
-      body: const Center(child: Text("Categories Coming Soon", style: TextStyle(color: Colors.grey))),
-    );
-  }
-}
-
-// --- Profile Screen (With AssetImage) ---
+// --- Profile Screen ---
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
   @override
@@ -810,16 +1053,15 @@ class ProfileScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(3),
               decoration: const BoxDecoration(shape: BoxShape.circle, color: kGoldColor),
-              child: const CircleAvatar(
+              child: CircleAvatar(
                   radius: 50,
-                  // IMPORTANT: Make sure this file exists
-                  backgroundImage: AssetImage("assets/images/profile.png")
+
               ),
             ),
             const SizedBox(height: 20),
             Text("Marcus Sterling", style: GoogleFonts.cinzel(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
             const SizedBox(height: 5),
-            Text("Elite Member", style: TextStyle(color: kGoldColor)),
+            const Text("Elite Member", style: TextStyle(color: kGoldColor)),
             const SizedBox(height: 40),
             _profileItem(Icons.settings_outlined, "Settings"),
             _profileItem(Icons.credit_card_outlined, "Payment Methods"),
