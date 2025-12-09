@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:ui'; // For ImageFilter
+import 'dart:ui';
 import 'dart:async';
 
-// --- Data Model ---
 class CartItem {
   final String title;
   final String price;
