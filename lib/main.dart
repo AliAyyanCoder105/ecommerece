@@ -1,267 +1,262 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() {
-  runApp(const FoodPickerApp());
+  runApp(const MyApp());
 }
 
-class FoodPickerApp extends StatelessWidget {
-  const FoodPickerApp({super.key});
+class Player {
+  final String name;
+  final String image;
+  const Player({required this.name, required this.image});
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(fontFamily: "Poppins"),
-      home: const FoodHome(),
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: Colors.black,
+      ),
+      home: const TournamentMobilePage(),
     );
   }
 }
 
-class FoodHome extends StatefulWidget {
-  const FoodHome({super.key});
+class TournamentMobilePage extends StatelessWidget {
+  const TournamentMobilePage({super.key});
 
-  @override
-  State<FoodHome> createState() => _FoodHomeState();
-}
-
-class _FoodHomeState extends State<FoodHome>
-    with SingleTickerProviderStateMixin {
-  final List<Map<String, String>> foods = List.generate(40, (i) {
-    final allFoods = [
-      ["Biryani", "🍛"],
-      ["Zinger Burger", "🍔"],
-      ["Chicken Karahi", "🍗"],
-      ["Pizza", "🍕"],
-      ["Fries", "🍟"],
-      ["Shawarma", "🥙"],
-      ["Pasta Alfredo", "🍝"],
-      ["Steak", "🥩"],
-      ["Noodles", "🍜"],
-      ["Sushi", "🍣"],
-      ["Tacos", "🌮"],
-      ["Qorma", "🍲"],
-      ["Paratha Roll", "🌯"],
-      ["BBQ Tikka", "🍖"],
-      ["Ice Cream", "🍨"],
-      ["Cold Coffee", "🥤"],
-      ["Daal Chawal", "🍚"],
-      ["Gol Gappay", "🥟"],
-      ["Milkshake", "🍧"],
-      ["Donuts", "🍩"],
-      ["Fried Fish", "🐟"],
-      ["Mutton Karahi", "🍖"],
-      ["Aloo Ke Parathay", "🥘"],
-      ["Momos", "🥟"],
-      ["Veg Salad", "🥗"],
-      ["Halwa Puri", "🍥"],
-      ["Kebab Platter", "🍢"],
-      ["Broast", "🍗"],
-      ["Lemonade", "🍋"],
-      ["Chocolate Cake", "🍰"],
-    ];
-    return {
-      "name": allFoods[i % allFoods.length][0],
-      "emoji": allFoods[i % allFoods.length][1],
-    };
-  });
-
-  String selectedFood = "";
-  String selectedEmoji = "";
-
-  late AnimationController spinController;
-
-  @override
-  void initState() {
-    super.initState();
-    spinController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    );
-  }
-
-  void spin() {
-    spinController.forward(from: 0);
-
-    final random = Random();
-    final item = foods[random.nextInt(foods.length)];
-
-    setState(() {
-      selectedFood = item["name"]!;
-      selectedEmoji = item["emoji"]!;
-    });
-
-    Future.delayed(const Duration(milliseconds: 900), () {
-      showResultDialog();
-    });
-  }
-
-  void showResultDialog() {
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withOpacity(0.4),
-      builder: (_) => ScaleTransition(
-        scale: CurvedAnimation(parent: spinController, curve: Curves.elasticOut),
-        child: Dialog(
-          backgroundColor: Colors.white.withOpacity(0.1),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30)),
-          child: Container(
-            padding: const EdgeInsets.all(25),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(30),
-              gradient: LinearGradient(
-                colors: [
-                  Colors.white.withOpacity(0.6),
-                  Colors.white.withOpacity(0.05)
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border.all(color: Colors.white.withOpacity(0.3)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.pinkAccent.withOpacity(0.4),
-                  blurRadius: 30,
-                  spreadRadius: 2,
-                )
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  "Your Fate",
-                  style: TextStyle(
-                      fontSize: 26,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  "$selectedFood $selectedEmoji🔥",
-                  style: const TextStyle(
-                      fontSize: 34,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 25),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black.withOpacity(0.6),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18)),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 40, vertical: 14),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Spin Again"),
-                )
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget floatingEmoji(double top, double left, String emoji) {
-    return Positioned(
-      top: top,
-      left: left,
-      child: AnimatedBuilder(
-        animation: spinController,
-        builder: (_, child) => Transform.rotate(
-          angle: spinController.value * 3,
-          child: child,
-        ),
-        child: Text(
-          emoji,
-          style: const TextStyle(fontSize: 30),
-        ),
-      ),
-    );
-  }
+  final List<Player> players = const [
+    Player(name: "طلحہ", image: "assets/images/talha.png"),
+    Player(name: "احمد", image: "assets/images/bagi.png"),
+    Player(name: "ریحان", image: "assets/images/rehan.png"),
+    Player(name: "عثمان", image: "assets/images/usman.png"),
+    Player(name: "نادر", image: "assets/images/nadir.png"),
+    Player(name: "عبد اللہ", image: "assets/images/p6.png"),
+  ];
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
       body: Stack(
         children: [
-          // ✨ Liquid Gradient Background
+          /// BACKGROUND
           Container(
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xffFF5F6D), Color(0xffFFC371)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+              image: DecorationImage(
+                image: AssetImage("assets/images/background.png"),
+                fit: BoxFit.cover,
               ),
             ),
           ),
+          Container(color: Colors.black.withOpacity(0.75)),
 
-          floatingEmoji(80, 40, "🍕"),
-          floatingEmoji(200, 300, "🍔"),
-          floatingEmoji(500, 100, "🍣"),
-          floatingEmoji(400, 250, "🥙"),
-          floatingEmoji(150, 210, "🍟"),
-
-          Center(
-            child: ScaleTransition(
-              scale:
-              CurvedAnimation(parent: spinController, curve: Curves.easeOut),
-              child: Container(
-                padding: const EdgeInsets.all(60),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      Colors.white.withOpacity(0.9),
-                      Colors.white.withOpacity(0.4)
-                    ],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.white.withOpacity(0.6),
-                      blurRadius: 30,
-                      spreadRadius: 5,
-                    )
-                  ],
-                ),
-                child: const Text(
-                  "🍽️",
-                  style: TextStyle(fontSize: 70),
-                ),
-              ),
-            ),
-          ),
-
-          Align(
-            alignment: Alignment.bottomCenter,
+          SafeArea(
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 90),
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white.withOpacity(0.25),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 50, vertical: 18),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
-                  elevation: 0,
-                ),
-                onPressed: spin,
-                child: const Text(
-                  "Spin the Wheel 🎯",
-                  style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1),
-                ),
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                children: [
+                  /// HEADER
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 28, vertical: 14),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xff00c853), Color(0xff009688)],
+                      ),
+                      borderRadius: BorderRadius.circular(50),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black54,
+                          blurRadius: 12,
+                          offset: Offset(0, 6),
+                        )
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          "خوش آمدید",
+                          style: GoogleFonts.amiri(
+                            fontSize: 22,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          "ڈبل وکٹ ٹورنامنٹ",
+                          style: GoogleFonts.amiri(
+                            fontSize: 15,
+                            color: Colors.yellowAccent,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  /// ENTRY FEE
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Colors.orange, Colors.deepOrange],
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black38,
+                          blurRadius: 10,
+                          offset: Offset(0, 4),
+                        )
+                      ],
+                    ),
+                    child: Text(
+                      "انٹری فیس: 500 روپے",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.notoNastaliqUrdu(
+                        fontSize: 14,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  /// RULES CARD
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(22),
+                      color: Colors.white.withOpacity(0.12),
+                      border: Border.all(color: Colors.white24),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black54,
+                          blurRadius: 12,
+                        )
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "ٹورنامنٹ کی شرائط",
+                          style: GoogleFonts.amiri(
+                            fontSize: 18,
+                            color: Colors.lightGreenAccent,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "• تمام ٹیمیں وقت پر گراؤنڈ میں موجود ہوں\n"
+                              "• لیٹ آنے والی ٹیم نااہل ہوگی\n"
+                              "• امپائر کا فیصلہ حتمی ہوگا",
+                          style: GoogleFonts.notoNastaliqUrdu(
+                            fontSize: 13,
+                            height: 2,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  /// PLAYERS GRID
+                  Expanded(
+                    child: Column(
+                      children: [
+                        _playerRow(context, players.sublist(0, 3)),
+                        const SizedBox(height: 12),
+                        _playerRow(context, players.sublist(3, 6)),
+                      ],
+                    ),
+                  ),
+
+                  /// CONTACT
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Colors.redAccent, Colors.deepOrange],
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black38,
+                          blurRadius: 10,
+                        )
+                      ],
+                    ),
+                    child: Text(
+                      "رابطہ کریں: 0328‑1276911",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.notoNastaliqUrdu(
+                        fontSize: 13,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// PLAYER ROW
+  Widget _playerRow(BuildContext context, List<Player> rowPlayers) {
+    final width = MediaQuery.of(context).size.width;
+
+    return Expanded(
+      child: Row(
+        children: rowPlayers.map((player) {
+          return Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [Colors.greenAccent, Colors.teal],
+                    ),
+                  ),
+                  child: CircleAvatar(
+                    radius: width * 0.11,
+                    backgroundImage: AssetImage(player.image),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  player.name,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.notoNastaliqUrdu(
+                    fontSize: 13,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
       ),
     );
   }
