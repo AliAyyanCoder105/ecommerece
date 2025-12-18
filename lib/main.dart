@@ -171,7 +171,7 @@ class TournamentWebPosterPage extends StatelessWidget {
 
                             const SizedBox(width: 24),
 
-                            /// RIGHT – PLAYERS (NO SCROLL)
+
                             Expanded(
                               flex: 3,
                               child: GridView.count(
