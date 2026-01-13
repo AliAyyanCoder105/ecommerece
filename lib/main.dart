@@ -1,193 +1,294 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:flutter/services.dart';
 
 void main() {
-  runApp(const GiggleApp());
+  runApp(const ToyShopApp());
 }
 
-class GiggleApp extends StatelessWidget {
-  const GiggleApp({super.key});
+class ToyShopApp extends StatelessWidget {
+  const ToyShopApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Giggle Generator',
-      theme: ThemeData.dark(),
-      home: const GiggleHome(),
+      title: 'ToyLand Store',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.orangeAccent,
+        brightness: Brightness.light,
+      ),
+      home: const ToyStoreHome(),
     );
   }
 }
 
-class GiggleHome extends StatefulWidget {
-  const GiggleHome({super.key});
+// Toy Model
+class Toy {
+  final String name;
+  final String price;
+  final String image;
+  final String category;
+  final double rating;
+  bool isFavorite;
 
-  @override
-  State<GiggleHome> createState() => _GiggleHomeState();
+  Toy(this.name, this.price, this.image, this.category, this.rating, {this.isFavorite = false});
 }
 
-class _GiggleHomeState extends State<GiggleHome>
-    with SingleTickerProviderStateMixin {
-  final word1Controller = TextEditingController();
-  final word2Controller = TextEditingController();
-
-  String joke = "Do lafz likho… joker ready hai 🤡";
-  String emoji = "😄";
-
-  late AnimationController _controller;
-  late Animation<double> _scale;
-
-  final random = Random();
-
-  final List<String> emojis = ["😂", "🤣", "😜", "🤡", "😆", "😎"];
-
-  final List<String> templates = [
-    "Aaj {w1} ne {w2} ko dekh kar resign de diya.",
-    "{w1} bola: main serious hoon. {w2} hans hans ke gir gaya.",
-    "Doctor ne kaha: zyada {w1} mat socho, warna {w2} ho jayega.",
-    "Life lesson: jab {w1} aaye, to {w2} bhool jao.",
-    "Breaking News 🚨: {w1} aur {w2} ki dosti khataray mein!",
-    "{w1} ne kaha trust me bro… {w2} ne uninstall kar diya.",
-  ];
+class ToyStoreHome extends StatefulWidget {
+  const ToyStoreHome({super.key});
 
   @override
-  void initState() {
-    super.initState();
-    _controller =
-        AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
-    _scale = CurvedAnimation(parent: _controller, curve: Curves.elasticOut);
-  }
+  State<ToyStoreHome> createState() => _ToyStoreHomeState();
+}
 
-  void generateJoke() {
-    if (word1Controller.text.isEmpty ||
-        word2Controller.text.isEmpty) {
-      setState(() {
-        joke = "Aray bhai 😒 dono words likho, phir hansna";
-        emoji = "🙄";
-      });
-      return;
-    }
+class _ToyStoreHomeState extends State<ToyStoreHome> {
+  int cartCount = 0;
+  String selectedCategory = "All";
 
-    final template = templates[random.nextInt(templates.length)];
+  final List<String> categories = ["All", "Action", "Educational", "Puzzle", "Cars"];
 
+  final List<Toy> toys = [
+    Toy("Robot Hero", "₹1,200", "🤖", "Action", 4.8),
+    Toy("Dino Park", "₹850", "🦖", "Action", 4.5),
+    Toy("Brainy Block", "₹500", "🧱", "Educational", 4.9),
+    Toy("Super Car", "₹2,500", "🏎️", "Cars", 4.7),
+    Toy("Magic Puzzle", "₹300", "🧩", "Puzzle", 4.2),
+    Toy("Space Shuttle", "₹1,800", "🚀", "Action", 4.6),
+    Toy("Teddy Bear", "₹700", "🧸", "Soft Toys", 4.9),
+    Toy("Train Set", "₹3,200", "🚂", "Cars", 4.4),
+  ];
+
+  void addToCart() {
+    HapticFeedback.lightImpact();
     setState(() {
-      joke = template
-          .replaceAll("{w1}", word1Controller.text)
-          .replaceAll("{w2}", word2Controller.text);
-      emoji = emojis[random.nextInt(emojis.length)];
+      cartCount++;
     });
-
-    _controller.forward(from: 0);
-  }
-
-  void shareJoke() {
-    Share.share("$emoji $joke\n\n— Giggle Generator 😄");
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Toy added to cart! 🛒"),
+        duration: Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    List<Toy> filteredToys = selectedCategory == "All"
+        ? toys
+        : toys.where((t) => t.category == selectedCategory).toList();
+
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF1E1E2C), Color(0xFF232526)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: CustomScrollView(
+        slivers: [
+          // Custom App Bar
+          SliverAppBar(
+            expandedHeight: 120,
+            floating: true,
+            pinned: true,
+            backgroundColor: Colors.orangeAccent,
+            flexibleSpace: const FlexibleSpaceBar(
+              title: Text("ToyLand ✨", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+              centerTitle: false,
+            ),
+            actions: [
+              Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white, size: 28),
+                    onPressed: () {},
+                  ),
+                  if (cartCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                        child: Text("$cartCount", style: const TextStyle(fontSize: 10, color: Colors.white)),
+                      ),
+                    )
+                ],
+              ),
+              const SizedBox(width: 10),
+            ],
           ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                const Text(
-                  "😄 Giggle Generator",
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 20),
 
-                _prettyField(word1Controller, "Word 1"),
-                const SizedBox(height: 12),
-                _prettyField(word2Controller, "Word 2"),
-
-                const SizedBox(height: 20),
-
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 30, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+          // Search & Categories
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: "Search toys...",
+                      prefixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
                     ),
                   ),
-                  onPressed: generateJoke,
-                  child: const Text("Generate Giggle 🎲"),
-                ),
-
-                const SizedBox(height: 25),
-
-                ScaleTransition(
-                  scale: _scale,
-                  child: Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.purpleAccent.withOpacity(0.4),
-                          blurRadius: 20,
-                          spreadRadius: 2,
-                        )
-                      ],
-                    ),
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      children: [
-                        Text(
-                          emoji,
-                          style: const TextStyle(fontSize: 40),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          joke,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                      ],
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    height: 40,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: categories.length,
+                      itemBuilder: (context, index) {
+                        bool isSelected = selectedCategory == categories[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 10),
+                          child: ChoiceChip(
+                            label: Text(categories[index]),
+                            selected: isSelected,
+                            onSelected: (val) => setState(() => selectedCategory = categories[index]),
+                            selectedColor: Colors.orangeAccent,
+                            labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black),
+                          ),
+                        );
+                      },
                     ),
                   ),
-                ),
-
-                const Spacer(),
-
-                IconButton(
-                  onPressed: shareJoke,
-                  icon: const Icon(Icons.share, size: 30),
-                ),
-                const SizedBox(height: 10),
-              ],
+                  const SizedBox(height: 10),
+                  const Text("Popular Toys", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                ],
+              ),
             ),
           ),
+
+          // Product Grid
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 15,
+                crossAxisSpacing: 15,
+                childAspectRatio: 0.75,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                  final toy = filteredToys[index];
+                  return _buildToyCard(toy);
+                },
+                childCount: filteredToys.length,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToyCard(Toy toy) {
+    return GestureDetector(
+      onTap: () => _showProductDetails(toy),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5))],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image Section
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: Center(child: Text(toy.image, style: const TextStyle(fontSize: 60))),
+              ),
+            ),
+            // Details Section
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(toy.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.star, size: 14, color: Colors.orange),
+                      Text(" ${toy.rating}", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(toy.price, style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.orangeAccent, fontSize: 16)),
+                      GestureDetector(
+                        onTap: addToCart,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(color: Colors.orangeAccent, shape: BoxShape.circle),
+                          child: const Icon(Icons.add, color: Colors.white, size: 20),
+                        ),
+                      )
+                    ],
+                  ),
+                ],
+              ),
+            )
+          ],
         ),
       ),
     );
   }
 
-  Widget _prettyField(TextEditingController controller, String label) {
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: Colors.black26,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
+  void _showProductDetails(Toy toy) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(25),
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(child: Text(toy.image, style: const TextStyle(fontSize: 100))),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(toy.name, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+                Text(toy.price, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.orangeAccent)),
+              ],
+            ),
+            Text(toy.category, style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
+            const SizedBox(height: 20),
+            const Text(
+              "Duniya ka behtareen toy jo aapke bache ki creativity ko boost karega. Isme koi harmful chemicals nahi hain aur ye bilkul safe hai.",
+              style: TextStyle(fontSize: 16, color: Colors.black87),
+            ),
+            const Spacer(),
+            SizedBox(
+              width: double.infinity,
+              height: 60,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  addToCart();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orangeAccent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                child: const Text("Add to Shopping Cart", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+            )
+          ],
         ),
       ),
     );
