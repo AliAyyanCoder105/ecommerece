@@ -15,8 +15,10 @@ class ToyShopApp extends StatelessWidget {
       title: 'ToyLand Store',
       theme: ThemeData(
         useMaterial3: true,
+        brightness: Brightness.dark,
         colorSchemeSeed: Colors.orangeAccent,
-        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFF0F0F0F),
+        cardColor: const Color(0xFF1C1C1E),
       ),
       home: const ToyStoreHome(),
     );
@@ -30,9 +32,8 @@ class Toy {
   final String image;
   final String category;
   final double rating;
-  bool isFavorite;
 
-  Toy(this.name, this.price, this.image, this.category, this.rating, {this.isFavorite = false});
+  Toy(this.name, this.price, this.image, this.category, this.rating);
 }
 
 class ToyStoreHome extends StatefulWidget {
@@ -42,75 +43,100 @@ class ToyStoreHome extends StatefulWidget {
   State<ToyStoreHome> createState() => _ToyStoreHomeState();
 }
 
-class _ToyStoreHomeState extends State<ToyStoreHome> {
-  int cartCount = 0;
+class _ToyStoreHomeState extends State<ToyStoreHome> with SingleTickerProviderStateMixin {
   String selectedCategory = "All";
+  List<Toy> cartItems = [];
 
   final List<String> categories = ["All", "Action", "Educational", "Puzzle", "Cars"];
 
   final List<Toy> toys = [
-    Toy("Robot Hero", "₹1,200", "🤖", "Action", 4.8),
-    Toy("Dino Park", "₹850", "🦖", "Action", 4.5),
-    Toy("Brainy Block", "₹500", "🧱", "Educational", 4.9),
-    Toy("Super Car", "₹2,500", "🏎️", "Cars", 4.7),
-    Toy("Magic Puzzle", "₹300", "🧩", "Puzzle", 4.2),
-    Toy("Space Shuttle", "₹1,800", "🚀", "Action", 4.6),
-    Toy("Teddy Bear", "₹700", "🧸", "Soft Toys", 4.9),
-    Toy("Train Set", "₹3,200", "🚂", "Cars", 4.4),
+    Toy("Robot Hero", "1200", "🤖", "Action", 4.8),
+    Toy("Dino Park", "850", "🦖", "Action", 4.5),
+    Toy("Brainy Block", "500", "🧱", "Educational", 4.9),
+    Toy("Super Car", "2500", "🏎️", "Cars", 4.7),
+    Toy("Magic Puzzle", "300", "🧩", "Puzzle", 4.2),
+    Toy("Space Shuttle", "1800", "🚀", "Action", 4.6),
   ];
 
-  void addToCart() {
+  late AnimationController _cartPulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _cartPulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+      lowerBound: 0.9,
+      upperBound: 1.1,
+    );
+  }
+
+  @override
+  void dispose() {
+    _cartPulseController.dispose();
+    super.dispose();
+  }
+
+  void addToCart(Toy toy) {
     HapticFeedback.lightImpact();
     setState(() {
-      cartCount++;
+      cartItems.add(toy);
     });
+    _cartPulseController.forward(from: 0.9);
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Toy added to cart! 🛒"),
-        duration: Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
+      SnackBar(
+        content: Text("${toy.name} added to cart 🛒"),
+        duration: const Duration(seconds: 1),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    List<Toy> filteredToys = selectedCategory == "All"
+    final filtered = selectedCategory == "All"
         ? toys
         : toys.where((t) => t.category == selectedCategory).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
       body: CustomScrollView(
         slivers: [
-          // Custom App Bar
+          // App Bar
           SliverAppBar(
-            expandedHeight: 120,
-            floating: true,
             pinned: true,
-            backgroundColor: Colors.orangeAccent,
-            flexibleSpace: const FlexibleSpaceBar(
-              title: Text("ToyLand ✨", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-              centerTitle: false,
-            ),
+            backgroundColor: Colors.black,
+            title: const Text("ToyLand ✨"),
             actions: [
-              Stack(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white, size: 28),
-                    onPressed: () {},
-                  ),
-                  if (cartCount > 0)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                        child: Text("$cartCount", style: const TextStyle(fontSize: 10, color: Colors.white)),
+              ScaleTransition(
+                scale: _cartPulseController,
+                child: Stack(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.shopping_cart_outlined),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CartScreen(cartItems: cartItems),
+                          ),
+                        );
+                      },
+                    ),
+                    if (cartItems.isNotEmpty)
+                      Positioned(
+                        right: 6,
+                        top: 6,
+                        child: CircleAvatar(
+                          radius: 9,
+                          backgroundColor: Colors.orangeAccent,
+                          child: Text(
+                            "${cartItems.length}",
+                            style: const TextStyle(fontSize: 11, color: Colors.black),
+                          ),
+                        ),
                       ),
-                    )
-                ],
+                  ],
+                ),
               ),
               const SizedBox(width: 10),
             ],
@@ -119,42 +145,47 @@ class _ToyStoreHomeState extends State<ToyStoreHome> {
           // Search & Categories
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   TextField(
                     decoration: InputDecoration(
                       hintText: "Search toys...",
-                      prefixIcon: const Icon(Icons.search),
                       filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+                      fillColor: const Color(0xFF1C1C1E),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: BorderSide.none,
+                      ),
+                      prefixIcon: const Icon(Icons.search),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
                   SizedBox(
-                    height: 40,
+                    height: 42,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       itemCount: categories.length,
-                      itemBuilder: (context, index) {
-                        bool isSelected = selectedCategory == categories[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 10),
+                      itemBuilder: (_, i) {
+                        final selected = categories[i] == selectedCategory;
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          margin: const EdgeInsets.only(right: 8),
                           child: ChoiceChip(
-                            label: Text(categories[index]),
-                            selected: isSelected,
-                            onSelected: (val) => setState(() => selectedCategory = categories[index]),
+                            label: Text(categories[i]),
+                            selected: selected,
                             selectedColor: Colors.orangeAccent,
-                            labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black),
+                            backgroundColor: Colors.grey[850],
+                            labelStyle: TextStyle(
+                              color: selected ? Colors.black : Colors.white,
+                            ),
+                            onSelected: (_) =>
+                                setState(() => selectedCategory = categories[i]),
                           ),
                         );
                       },
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  const Text("Popular Toys", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -162,20 +193,17 @@ class _ToyStoreHomeState extends State<ToyStoreHome> {
 
           // Product Grid
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.all(16),
             sliver: SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                mainAxisSpacing: 15,
-                crossAxisSpacing: 15,
-                childAspectRatio: 0.75,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: 0.72,
               ),
               delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                  final toy = filteredToys[index];
-                  return _buildToyCard(toy);
-                },
-                childCount: filteredToys.length,
+                    (context, index) => _toyCard(filtered[index]),
+                childCount: filtered.length,
               ),
             ),
           ),
@@ -184,112 +212,253 @@ class _ToyStoreHomeState extends State<ToyStoreHome> {
     );
   }
 
-  Widget _buildToyCard(Toy toy) {
+  Widget _toyCard(Toy toy) {
     return GestureDetector(
-      onTap: () => _showProductDetails(toy),
+      onTap: () {
+        Navigator.push(
+          context,
+          PageRouteBuilder(
+            transitionDuration: const Duration(milliseconds: 500),
+            pageBuilder: (_, __, ___) => ToyDetailScreen(
+              toy: toy,
+              onAdd: () => addToCart(toy),
+            ),
+          ),
+        );
+      },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5))],
+          color: const Color(0xFF1C1C1E).withOpacity(0.8),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: Colors.orangeAccent.withOpacity(0.2), width: 1.5),
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image Section
-            Expanded(
+            const SizedBox(height: 14),
+            Hero(
+              tag: toy.name,
               child: Container(
-                width: double.infinity,
+                width: 90,
+                height: 90,
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  shape: BoxShape.circle,
+                  color: Colors.orangeAccent.withOpacity(0.15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.orangeAccent.withOpacity(0.3),
+                      blurRadius: 20,
+                    ),
+                  ],
                 ),
-                child: Center(child: Text(toy.image, style: const TextStyle(fontSize: 60))),
+                child: Center(
+                  child: Text(toy.image, style: const TextStyle(fontSize: 42)),
+                ),
               ),
             ),
-            // Details Section
+            const SizedBox(height: 12),
+            Text(toy.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.star, size: 14, color: Colors.orangeAccent),
+                Text(" ${toy.rating}", style: const TextStyle(fontSize: 12)),
+              ],
+            ),
+            const Spacer(),
             Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(toy.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, size: 14, color: Colors.orange),
-                      Text(" ${toy.rating}", style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                    ],
+                  Text(
+                    "₹${toy.price}",
+                    style: const TextStyle(
+                      color: Colors.orangeAccent,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(toy.price, style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.orangeAccent, fontSize: 16)),
-                      GestureDetector(
-                        onTap: addToCart,
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: const BoxDecoration(color: Colors.orangeAccent, shape: BoxShape.circle),
-                          child: const Icon(Icons.add, color: Colors.white, size: 20),
-                        ),
-                      )
-                    ],
-                  ),
+                  CircleAvatar(
+                    child: IconButton(
+                      icon: const Icon(Icons.add, color: Colors.black),
+                      onPressed: () => addToCart(toy),
+                    ),
+                  )
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),
     );
   }
+}
 
-  void _showProductDetails(Toy toy) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(25),
-        height: MediaQuery.of(context).size.height * 0.6,
+// ====== Detail Screen ======
+class ToyDetailScreen extends StatelessWidget {
+  final Toy toy;
+  final Function onAdd;
+
+  const ToyDetailScreen({super.key, required this.toy, required this.onAdd});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(backgroundColor: Colors.black),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(child: Text(toy.image, style: const TextStyle(fontSize: 100))),
-            const SizedBox(height: 20),
+            Hero(
+              tag: toy.name,
+              child: Center(
+                child: Container(
+                  width: 160,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.orangeAccent.withOpacity(0.15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.orangeAccent.withOpacity(0.3),
+                        blurRadius: 30,
+                      )
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(toy.image, style: const TextStyle(fontSize: 80)),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+            Text(toy.name,
+                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+            Text(toy.category, style: TextStyle(color: Colors.grey.shade400)),
+            const SizedBox(height: 15),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(toy.name, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-                Text(toy.price, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.orangeAccent)),
+                const Icon(Icons.star, color: Colors.orangeAccent),
+                Text(" ${toy.rating} rating"),
               ],
             ),
-            Text(toy.category, style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
-            const SizedBox(height: 20),
+            const SizedBox(height: 25),
             const Text(
-              "Duniya ka behtareen toy jo aapke bache ki creativity ko boost karega. Isme koi harmful chemicals nahi hain aur ye bilkul safe hai.",
-              style: TextStyle(fontSize: 16, color: Colors.black87),
+              "This premium quality toy boosts creativity, imagination, and joy. "
+                  "Made with child-safe materials and designed for endless fun.",
+              style: TextStyle(fontSize: 16, height: 1.5),
             ),
             const Spacer(),
-            SizedBox(
+            Container(
               width: double.infinity,
               height: 60,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  addToCart();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orangeAccent,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
-                child: const Text("Add to Shopping Cart", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [Colors.orangeAccent, Colors.deepOrange]),
+                borderRadius: BorderRadius.circular(20),
               ),
-            )
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                ),
+                onPressed: () {
+                  onAdd();
+                  Navigator.pop(context);
+                },
+                child: Text(
+                  "Add to Cart • ₹${toy.price}",
+                  style: const TextStyle(fontSize: 18, color: Colors.black),
+                ),
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ====== Cart Screen ======
+class CartScreen extends StatelessWidget {
+  final List<Toy> cartItems;
+
+  const CartScreen({super.key, required this.cartItems});
+
+  @override
+  Widget build(BuildContext context) {
+    double total = cartItems.fold(
+      0,
+          (sum, item) => sum + double.parse(item.price),
+    );
+
+    return Scaffold(
+      appBar: AppBar(title: const Text("My Cart")),
+      body: cartItems.isEmpty
+          ? const Center(
+        child: Text(
+          "Your cart is empty 🛒",
+          style: TextStyle(fontSize: 18),
+        ),
+      )
+          : Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: cartItems.length,
+              itemBuilder: (context, index) {
+                final toy = cartItems[index];
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.orangeAccent.withOpacity(0.2),
+                    child: Text(toy.image),
+                  ),
+                  title: Text(toy.name),
+                  subtitle: Text("₹${toy.price}"),
+                  trailing: const Icon(Icons.check_circle, color: Colors.orangeAccent),
+                );
+              },
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("Total", style: TextStyle(fontSize: 18)),
+                    Text(
+                      "₹$total",
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orangeAccent,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 15),
+                Container(
+                  width: double.infinity,
+                  height: 55,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [Colors.orangeAccent, Colors.deepOrange]),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                    ),
+                    onPressed: () {},
+                    child: const Text("Checkout", style: TextStyle(fontSize: 18, color: Colors.black)),
+                  ),
+                )
+              ],
+            ),
+          )
+        ],
       ),
     );
   }
