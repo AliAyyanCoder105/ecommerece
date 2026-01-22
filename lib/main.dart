@@ -1,463 +1,380 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 void main() {
-  runApp(const ToyShopApp());
+  runApp(const ReelApp());
 }
 
-class ToyShopApp extends StatelessWidget {
-  const ToyShopApp({super.key});
+class ReelApp extends StatelessWidget {
+  const ReelApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'ToyLand Store',
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        colorSchemeSeed: Colors.orangeAccent,
-        scaffoldBackgroundColor: const Color(0xFF0F0F0F),
-        cardColor: const Color(0xFF1C1C1E),
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: Colors.black,
+        colorScheme: const ColorScheme.dark(primary: Colors.pinkAccent),
       ),
-      home: const ToyStoreHome(),
+      home: const ReelFeedScreen(),
     );
   }
 }
 
-// Toy Model
-class Toy {
-  final String name;
-  final String price;
-  final String image;
-  final String category;
-  final double rating;
+// --- Model ---
+class Reel {
+  final String username;
+  final String caption;
+  final String musicName;
+  final String imageUrl;
+  final String likes;
+  final String comments;
+  final Color themeColor;
+  bool isFollowing;
 
-  Toy(this.name, this.price, this.image, this.category, this.rating);
+  Reel({
+    required this.username,
+    required this.caption,
+    required this.musicName,
+    required this.imageUrl,
+    required this.likes,
+    required this.comments,
+    required this.themeColor,
+    this.isFollowing = false,
+  });
 }
 
-class ToyStoreHome extends StatefulWidget {
-  const ToyStoreHome({super.key});
+// --- Main Feed ---
+class ReelFeedScreen extends StatefulWidget {
+  const ReelFeedScreen({super.key});
 
   @override
-  State<ToyStoreHome> createState() => _ToyStoreHomeState();
+  State<ReelFeedScreen> createState() => _ReelFeedScreenState();
 }
 
-class _ToyStoreHomeState extends State<ToyStoreHome> with SingleTickerProviderStateMixin {
-  String selectedCategory = "All";
-  List<Toy> cartItems = [];
-
-  final List<String> categories = ["All", "Action", "Educational", "Puzzle", "Cars"];
-
-  final List<Toy> toys = [
-    Toy("Robot Hero", "1200", "🤖", "Action", 4.8),
-    Toy("Dino Park", "850", "🦖", "Action", 4.5),
-    Toy("Brainy Block", "500", "🧱", "Educational", 4.9),
-    Toy("Super Car", "2500", "🏎️", "Cars", 4.7),
-    Toy("Magic Puzzle", "300", "🧩", "Puzzle", 4.2),
-    Toy("Space Shuttle", "1800", "🚀", "Action", 4.6),
+class _ReelFeedScreenState extends State<ReelFeedScreen> {
+  final List<Reel> reels = [
+    Reel(
+      username: "cyber_punk_2024",
+      caption: "Living in the future 🌃 #neon #vibes #tokyo",
+      musicName: "Night City - Artemis (Original Sound)",
+      imageUrl: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1000",
+      likes: "1.2M",
+      comments: "12.5K",
+      themeColor: Colors.cyanAccent,
+    ),
+    Reel(
+      username: "nature_explore",
+      caption: "Peace is found in the mountains 🏔️ #nature #trekking",
+      musicName: "Forest Birds - Relaxing Sounds",
+      imageUrl: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1000",
+      likes: "890K",
+      comments: "4.2K",
+      themeColor: Colors.greenAccent,
+    ),
+    Reel(
+      username: "tech_reviewer",
+      caption: "This new gadget is insane! 🤯 #tech #unboxing",
+      musicName: "Synthwave Beats - Digital Artist",
+      imageUrl: "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1000",
+      likes: "450K",
+      comments: "8.1K",
+      themeColor: Colors.purpleAccent,
+    ),
   ];
-
-  late AnimationController _cartPulseController;
-
-  @override
-  void initState() {
-    super.initState();
-    _cartPulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-      lowerBound: 0.9,
-      upperBound: 1.1,
-    );
-  }
-
-  @override
-  void dispose() {
-    _cartPulseController.dispose();
-    super.dispose();
-  }
-
-  void addToCart(Toy toy) {
-    HapticFeedback.lightImpact();
-    setState(() {
-      cartItems.add(toy);
-    });
-    _cartPulseController.forward(from: 0.9);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("${toy.name} added to cart 🛒"),
-        duration: const Duration(seconds: 1),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = selectedCategory == "All"
-        ? toys
-        : toys.where((t) => t.category == selectedCategory).toList();
-
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // App Bar
-          SliverAppBar(
-            pinned: true,
-            backgroundColor: Colors.black,
-            title: const Text("ToyLand ✨"),
-            actions: [
-              ScaleTransition(
-                scale: _cartPulseController,
-                child: Stack(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.shopping_cart_outlined),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => CartScreen(cartItems: cartItems),
-                          ),
-                        );
-                      },
-                    ),
-                    if (cartItems.isNotEmpty)
-                      Positioned(
-                        right: 6,
-                        top: 6,
-                        child: CircleAvatar(
-                          radius: 9,
-                          backgroundColor: Colors.orangeAccent,
-                          child: Text(
-                            "${cartItems.length}",
-                            style: const TextStyle(fontSize: 11, color: Colors.black),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-            ],
+      extendBodyBehindAppBar: true,
+      body: Stack(
+        children: [
+          PageView.builder(
+            scrollDirection: Axis.vertical,
+            itemCount: reels.length,
+            itemBuilder: (context, index) => ReelItem(reel: reels[index]),
           ),
-
-          // Search & Categories
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Search toys...",
-                      filled: true,
-                      fillColor: const Color(0xFF1C1C1E),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(18),
-                        borderSide: BorderSide.none,
-                      ),
-                      prefixIcon: const Icon(Icons.search),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: 42,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: categories.length,
-                      itemBuilder: (_, i) {
-                        final selected = categories[i] == selectedCategory;
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          margin: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: Text(categories[i]),
-                            selected: selected,
-                            selectedColor: Colors.orangeAccent,
-                            backgroundColor: Colors.grey[850],
-                            labelStyle: TextStyle(
-                              color: selected ? Colors.black : Colors.white,
-                            ),
-                            onSelected: (_) =>
-                                setState(() => selectedCategory = categories[i]),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
+          // Top Navigation
+          Positioned(
+            top: 50,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _topTab("Following", false),
+                const SizedBox(width: 20),
+                _topTab("For You", true),
+              ],
             ),
           ),
-
-          // Product Grid
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                childAspectRatio: 0.72,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                    (context, index) => _toyCard(filtered[index]),
-                childCount: filtered.length,
-              ),
-            ),
-          ),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.black,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: ""),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: ""),
+          BottomNavigationBarItem(icon: Icon(Icons.add_box_outlined, size: 35), label: ""),
+          BottomNavigationBarItem(icon: Icon(Icons.favorite_border), label: ""),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: ""),
         ],
       ),
     );
   }
 
-  Widget _toyCard(Toy toy) {
+  Widget _topTab(String label, bool isActive) {
+    return Text(label,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+          color: isActive ? Colors.white : Colors.white60,
+        ));
+  }
+}
+
+// --- Individual Reel Item ---
+class ReelItem extends StatefulWidget {
+  final Reel reel;
+  const ReelItem({super.key, required this.reel});
+
+  @override
+  State<ReelItem> createState() => _ReelItemState();
+}
+
+class _ReelItemState extends State<ReelItem> with SingleTickerProviderStateMixin {
+  late AnimationController _musicController;
+  bool isLiked = false;
+  bool showHeart = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _musicController = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat();
+  }
+
+  @override
+  void dispose() {
+    _musicController.dispose();
+    super.dispose();
+  }
+
+  void _onDoubleTap() {
+    setState(() {
+      isLiked = true;
+      showHeart = true;
+    });
+    HapticFeedback.heavyImpact();
+    Future.delayed(const Duration(milliseconds: 800), () => setState(() => showHeart = false));
+  }
+
+  void _showComments() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.grey[900],
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => const CommentSheet(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          PageRouteBuilder(
-            transitionDuration: const Duration(milliseconds: 500),
-            pageBuilder: (_, __, ___) => ToyDetailScreen(
-              toy: toy,
-              onAdd: () => addToCart(toy),
-            ),
-          ),
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF1C1C1E).withOpacity(0.8),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: Colors.orangeAccent.withOpacity(0.2), width: 1.5),
-        ),
-        child: Column(
-          children: [
-            const SizedBox(height: 14),
-            Hero(
-              tag: toy.name,
-              child: Container(
-                width: 90,
-                height: 90,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.orangeAccent.withOpacity(0.15),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.orangeAccent.withOpacity(0.3),
-                      blurRadius: 20,
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Text(toy.image, style: const TextStyle(fontSize: 42)),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(toy.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.star, size: 14, color: Colors.orangeAccent),
-                Text(" ${toy.rating}", style: const TextStyle(fontSize: 12)),
-              ],
-            ),
-            const Spacer(),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "₹${toy.price}",
-                    style: const TextStyle(
-                      color: Colors.orangeAccent,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  CircleAvatar(
-                    child: IconButton(
-                      icon: const Icon(Icons.add, color: Colors.black),
-                      onPressed: () => addToCart(toy),
-                    ),
-                  )
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ====== Detail Screen ======
-class ToyDetailScreen extends StatelessWidget {
-  final Toy toy;
-  final Function onAdd;
-
-  const ToyDetailScreen({super.key, required this.toy, required this.onAdd});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.black),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Hero(
-              tag: toy.name,
-              child: Center(
-                child: Container(
-                  width: 160,
-                  height: 160,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.orangeAccent.withOpacity(0.15),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.orangeAccent.withOpacity(0.3),
-                        blurRadius: 30,
-                      )
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(toy.image, style: const TextStyle(fontSize: 80)),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 30),
-            Text(toy.name,
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-            Text(toy.category, style: TextStyle(color: Colors.grey.shade400)),
-            const SizedBox(height: 15),
-            Row(
-              children: [
-                const Icon(Icons.star, color: Colors.orangeAccent),
-                Text(" ${toy.rating} rating"),
-              ],
-            ),
-            const SizedBox(height: 25),
-            const Text(
-              "This premium quality toy boosts creativity, imagination, and joy. "
-                  "Made with child-safe materials and designed for endless fun.",
-              style: TextStyle(fontSize: 16, height: 1.5),
-            ),
-            const Spacer(),
-            Container(
-              width: double.infinity,
-              height: 60,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Colors.orangeAccent, Colors.deepOrange]),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                ),
-                onPressed: () {
-                  onAdd();
-                  Navigator.pop(context);
-                },
-                child: Text(
-                  "Add to Cart • ₹${toy.price}",
-                  style: const TextStyle(fontSize: 18, color: Colors.black),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ====== Cart Screen ======
-class CartScreen extends StatelessWidget {
-  final List<Toy> cartItems;
-
-  const CartScreen({super.key, required this.cartItems});
-
-  @override
-  Widget build(BuildContext context) {
-    double total = cartItems.fold(
-      0,
-          (sum, item) => sum + double.parse(item.price),
-    );
-
-    return Scaffold(
-      appBar: AppBar(title: const Text("My Cart")),
-      body: cartItems.isEmpty
-          ? const Center(
-        child: Text(
-          "Your cart is empty 🛒",
-          style: TextStyle(fontSize: 18),
-        ),
-      )
-          : Column(
+      onDoubleTap: _onDoubleTap,
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: cartItems.length,
-              itemBuilder: (context, index) {
-                final toy = cartItems[index];
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Colors.orangeAccent.withOpacity(0.2),
-                    child: Text(toy.image),
-                  ),
-                  title: Text(toy.name),
-                  subtitle: Text("₹${toy.price}"),
-                  trailing: const Icon(Icons.check_circle, color: Colors.orangeAccent),
-                );
-              },
+          // Background Image (Video Placeholder)
+          Image.network(widget.reel.imageUrl, fit: BoxFit.cover),
+
+          // Overlay Gradient
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.black.withOpacity(0.3), Colors.transparent, Colors.black.withOpacity(0.8)],
+              ),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(20),
+
+          // Right Sidebar Actions
+          Positioned(
+            right: 12,
+            bottom: 100,
             child: Column(
               children: [
+                _buildProfile(widget.reel),
+                const SizedBox(height: 20),
+                _sideAction(
+                  icon: isLiked ? Icons.favorite : Icons.favorite_border,
+                  label: widget.reel.likes,
+                  color: isLiked ? Colors.red : Colors.white,
+                  onTap: () => setState(() => isLiked = !isLiked),
+                ),
+                _sideAction(icon: Icons.comment_rounded, label: widget.reel.comments, onTap: _showComments),
+                _sideAction(icon: Icons.share, label: "Share"),
+                const SizedBox(height: 10),
+                _buildMusicDisk(),
+              ],
+            ),
+          ),
+
+          // Bottom Content
+          Positioned(
+            bottom: 20,
+            left: 15,
+            right: 80,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("@${widget.reel.username}",
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                const SizedBox(height: 10),
+                Text(widget.reel.caption, style: const TextStyle(fontSize: 15)),
+                const SizedBox(height: 15),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text("Total", style: TextStyle(fontSize: 18)),
-                    Text(
-                      "₹$total",
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orangeAccent,
-                      ),
+                    const Icon(Icons.music_note, size: 15, color: Colors.white),
+                    const SizedBox(width: 5),
+                    SizedBox(
+                      width: 200,
+                      child: Text(widget.reel.musicName,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 14)),
                     ),
                   ],
                 ),
-                const SizedBox(height: 15),
-                Container(
-                  width: double.infinity,
-                  height: 55,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [Colors.orangeAccent, Colors.deepOrange]),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                    ),
-                    onPressed: () {},
-                    child: const Text("Checkout", style: TextStyle(fontSize: 18, color: Colors.black)),
-                  ),
-                )
               ],
             ),
+          ),
+
+          // Bottom Progress Bar
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: LinearProgressIndicator(
+              value: 0.4, // Mock progress
+              backgroundColor: Colors.white12,
+              valueColor: AlwaysStoppedAnimation<Color>(widget.reel.themeColor),
+              minHeight: 2,
+            ),
+          ),
+
+          // Double Tap Heart Animation
+          if (showHeart)
+            Center(
+              child: TweenAnimationBuilder(
+                tween: Tween<double>(begin: 0.5, end: 1.2),
+                duration: const Duration(milliseconds: 300),
+                builder: (context, value, child) => Transform.scale(
+                  scale: value,
+                  child: const Icon(Icons.favorite, color: Colors.red, size: 120),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfile(Reel reel) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(2),
+          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+          child: const CircleAvatar(
+            radius: 25,
+            backgroundImage: NetworkImage("https://i.pravatar.cc/150?u=a"),
+          ),
+        ),
+        if (!reel.isFollowing)
+          Positioned(
+            bottom: -8,
+            left: 18,
+            child: GestureDetector(
+              onTap: () => setState(() => widget.reel.isFollowing = true),
+              child: Container(
+                decoration: const BoxDecoration(color: Colors.pinkAccent, shape: BoxShape.circle),
+                child: const Icon(Icons.add, size: 18, color: Colors.white),
+              ),
+            ),
           )
+      ],
+    );
+  }
+
+  Widget _buildMusicDisk() {
+    return RotationTransition(
+      turns: _musicController,
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          gradient: const SweepGradient(colors: [Colors.black, Colors.grey, Colors.black]),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white24, width: 4),
+        ),
+        child: const Icon(Icons.music_note, size: 20),
+      ),
+    );
+  }
+
+  Widget _sideAction({required IconData icon, required String label, Color color = Colors.white, VoidCallback? onTap}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          children: [
+            Icon(icon, size: 35, color: color),
+            const SizedBox(height: 4),
+            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// --- Comment Bottom Sheet ---
+class CommentSheet extends StatelessWidget {
+  const CommentSheet({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          const Text("12.5K Comments", style: TextStyle(fontWeight: FontWeight.bold)),
+          const Divider(height: 30),
+          Expanded(
+            child: ListView.builder(
+              itemCount: 10,
+              itemBuilder: (context, index) => ListTile(
+                leading: const CircleAvatar(backgroundColor: Colors.blueGrey),
+                title: Text("User_$index", style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                subtitle: const Text("This is a flashy Reel! 🔥 Keep it up.", style: TextStyle(color: Colors.white)),
+                trailing: const Icon(Icons.favorite_border, size: 15),
+              ),
+            ),
+          ),
+          TextField(
+            decoration: InputDecoration(
+              hintText: "Add comment...",
+              suffixIcon: const Icon(Icons.alternate_email, color: Colors.pinkAccent),
+              filled: true,
+              fillColor: Colors.white10,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+            ),
+          ),
         ],
       ),
     );
