@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 void main() {
-  runApp(const ReelApp());
+  runApp(const UltraPremiumReelApp());
 }
 
-class ReelApp extends StatelessWidget {
-  const ReelApp({super.key});
+class UltraPremiumReelApp extends StatelessWidget {
+  const UltraPremiumReelApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -15,170 +15,164 @@ class ReelApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: Colors.black,
-        colorScheme: const ColorScheme.dark(primary: Colors.pinkAccent),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFFFF0050),
+          secondary: Color(0xFF00F2EA),
+          tertiary: Color(0xFFFFD700),
+        ),
       ),
-      home: const ReelFeedScreen(),
+      home: const MainFeedScreen(),
     );
   }
 }
 
-// --- Model ---
 class Reel {
-  final String username;
-  final String caption;
-  final String musicName;
-  final String imageUrl;
-  final String likes;
-  final String comments;
-  final Color themeColor;
-  bool isFollowing;
-
-  Reel({
-    required this.username,
-    required this.caption,
-    required this.musicName,
-    required this.imageUrl,
-    required this.likes,
-    required this.comments,
-    required this.themeColor,
-    this.isFollowing = false,
-  });
+  final String user, caption, music, url, likes, comments;
+  final bool isViral;
+  Reel(this.user, this.caption, this.music, this.url, this.likes, this.comments, {this.isViral = false});
 }
 
-// --- Main Feed ---
-class ReelFeedScreen extends StatefulWidget {
-  const ReelFeedScreen({super.key});
+class MainFeedScreen extends StatefulWidget {
+  const MainFeedScreen({super.key});
 
   @override
-  State<ReelFeedScreen> createState() => _ReelFeedScreenState();
+  State<MainFeedScreen> createState() => _MainFeedScreenState();
 }
 
-class _ReelFeedScreenState extends State<ReelFeedScreen> {
+class _MainFeedScreenState extends State<MainFeedScreen> {
   final List<Reel> reels = [
-    Reel(
-      username: "cyber_punk_2024",
-      caption: "Living in the future 🌃 #neon #vibes #tokyo",
-      musicName: "Night City - Artemis (Original Sound)",
-      imageUrl: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1000",
-      likes: "1.2M",
-      comments: "12.5K",
-      themeColor: Colors.cyanAccent,
-    ),
-    Reel(
-      username: "nature_explore",
-      caption: "Peace is found in the mountains 🏔️ #nature #trekking",
-      musicName: "Forest Birds - Relaxing Sounds",
-      imageUrl: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1000",
-      likes: "890K",
-      comments: "4.2K",
-      themeColor: Colors.greenAccent,
-    ),
-    Reel(
-      username: "tech_reviewer",
-      caption: "This new gadget is insane! 🤯 #tech #unboxing",
-      musicName: "Synthwave Beats - Digital Artist",
-      imageUrl: "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1000",
-      likes: "450K",
-      comments: "8.1K",
-      themeColor: Colors.purpleAccent,
-    ),
+    Reel("aura_design", "Defining the future of mobile interfaces 🚀 #ux #ui #flutter", "Inception Theme - Hans Zimmer", "https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=1000", "2.4M", "18K", isViral: true),
+    Reel("wanderlust", "Midnight in the Maldives is a dream.. ✨", "Ocean Waves - Lofi Girl", "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?q=80&w=1000", "950K", "5.2K"),
+    Reel("neon_racer", "Nothing beats the night drive 🏎️💨", "Phonk Killer - Tokyo", "https://images.unsplash.com/photo-1542281286-9e0a16bb7366?q=80&w=1000", "1.1M", "9K", isViral: true),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           PageView.builder(
             scrollDirection: Axis.vertical,
             itemCount: reels.length,
-            itemBuilder: (context, index) => ReelItem(reel: reels[index]),
+            itemBuilder: (context, index) => UltraReelItem(reel: reels[index]),
           ),
-          // Top Navigation
+
+          // Floating Top Navigation
           Positioned(
             top: 50,
             left: 0,
             right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _topTab("Following", false),
-                const SizedBox(width: 20),
-                _topTab("For You", true),
-              ],
+            child: ClipRRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _topNavItem("Following", false),
+                      const SizedBox(width: 30),
+                      _topNavItem("For You", true),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.black,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.add_box_outlined, size: 35), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite_border), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: ""),
+      bottomNavigationBar: _buildPremiumBottomBar(),
+    );
+  }
+
+  Widget _topNavItem(String title, bool active) {
+    return AnimatedScale(
+      scale: active ? 1.1 : 0.9,
+      duration: const Duration(milliseconds: 200),
+      child: Text(title, style: TextStyle(
+        color: active ? Colors.white : Colors.white38,
+        fontSize: 18,
+        fontWeight: active ? FontWeight.w900 : FontWeight.w500,
+        shadows: active ? [const Shadow(color: Colors.white24, blurRadius: 10)] : [],
+      )),
+    );
+  }
+
+  Widget _buildPremiumBottomBar() {
+    return Container(
+      height: 85,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: const BoxDecoration(
+        color: Colors.black,
+        border: Border(top: BorderSide(color: Colors.white10, width: 0.5)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _barIcon(Icons.grid_view_rounded, true),
+          _barIcon(Icons.search_rounded, false),
+          _createButton(),
+          _barIcon(Icons.notifications_none_rounded, false),
+          _barIcon(Icons.person_outline_rounded, false),
         ],
       ),
     );
   }
 
-  Widget _topTab(String label, bool isActive) {
-    return Text(label,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-          color: isActive ? Colors.white : Colors.white60,
-        ));
+  Widget _barIcon(IconData icon, bool selected) {
+    return Icon(icon, size: 28, color: selected ? Colors.white : Colors.white38);
+  }
+
+  Widget _createButton() {
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        gradient: const LinearGradient(colors: [Color(0xFF00F2EA), Color(0xFFFF0050)]),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(12)),
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
+      ),
+    );
   }
 }
 
-// --- Individual Reel Item ---
-class ReelItem extends StatefulWidget {
+class UltraReelItem extends StatefulWidget {
   final Reel reel;
-  const ReelItem({super.key, required this.reel});
+  const UltraReelItem({super.key, required this.reel});
 
   @override
-  State<ReelItem> createState() => _ReelItemState();
+  State<UltraReelItem> createState() => _UltraReelItemState();
 }
 
-class _ReelItemState extends State<ReelItem> with SingleTickerProviderStateMixin {
-  late AnimationController _musicController;
+class _UltraReelItemState extends State<UltraReelItem> with TickerProviderStateMixin {
+  late AnimationController _diskController;
+  late AnimationController _heartController;
   bool isLiked = false;
-  bool showHeart = false;
+  bool showLargeHeart = false;
 
   @override
   void initState() {
     super.initState();
-    _musicController = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat();
+    _diskController = AnimationController(vsync: this, duration: const Duration(seconds: 6))..repeat();
+    _heartController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
   }
 
   @override
   void dispose() {
-    _musicController.dispose();
+    _diskController.dispose();
+    _heartController.dispose();
     super.dispose();
   }
 
   void _onDoubleTap() {
-    setState(() {
-      isLiked = true;
-      showHeart = true;
-    });
+    setState(() { isLiked = true; showLargeHeart = true; });
     HapticFeedback.heavyImpact();
-    Future.delayed(const Duration(milliseconds: 800), () => setState(() => showHeart = false));
-  }
-
-  void _showComments() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.grey[900],
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => const CommentSheet(),
-    );
+    _heartController.forward(from: 0).then((_) {
+      Future.delayed(const Duration(milliseconds: 500), () => setState(() => showLargeHeart = false));
+    });
   }
 
   @override
@@ -188,94 +182,64 @@ class _ReelItemState extends State<ReelItem> with SingleTickerProviderStateMixin
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Background Image (Video Placeholder)
-          Image.network(widget.reel.imageUrl, fit: BoxFit.cover),
+          // Background Media
+          Image.network(widget.reel.url, fit: BoxFit.cover),
 
-          // Overlay Gradient
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.black.withOpacity(0.3), Colors.transparent, Colors.black.withOpacity(0.8)],
-              ),
-            ),
-          ),
+          // Mesh Gradient Overlay for Depth
+          _buildMeshOverlay(),
 
-          // Right Sidebar Actions
+          // Side Action Sidebar (Staggered Animation Feel)
           Positioned(
-            right: 12,
+            right: 15,
             bottom: 100,
             child: Column(
               children: [
-                _buildProfile(widget.reel),
-                const SizedBox(height: 20),
-                _sideAction(
-                  icon: isLiked ? Icons.favorite : Icons.favorite_border,
-                  label: widget.reel.likes,
-                  color: isLiked ? Colors.red : Colors.white,
-                  onTap: () => setState(() => isLiked = !isLiked),
-                ),
-                _sideAction(icon: Icons.comment_rounded, label: widget.reel.comments, onTap: _showComments),
-                _sideAction(icon: Icons.share, label: "Share"),
-                const SizedBox(height: 10),
-                _buildMusicDisk(),
+                _buildProfile(widget.reel.isViral),
+                const SizedBox(height: 25),
+                _squishButton(Icons.favorite, widget.reel.likes, isLiked ? Colors.redAccent : Colors.white, () {
+                  setState(() => isLiked = !isLiked);
+                  HapticFeedback.selectionClick();
+                }),
+                _squishButton(Icons.mode_comment_rounded, widget.reel.comments, Colors.white, () {}),
+                _squishButton(Icons.send_rounded, "Share", Colors.white, () {}),
+                _squishButton(Icons.more_horiz_rounded, "", Colors.white, () {}),
+                const SizedBox(height: 15),
+                _rotatingMusicDisk(),
               ],
             ),
           ),
 
-          // Bottom Content
+          // Info Overlay
           Positioned(
-            bottom: 20,
-            left: 15,
-            right: 80,
+            bottom: 30,
+            left: 20,
+            right: 100,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("@${widget.reel.username}",
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                const SizedBox(height: 10),
-                Text(widget.reel.caption, style: const TextStyle(fontSize: 15)),
-                const SizedBox(height: 15),
                 Row(
                   children: [
-                    const Icon(Icons.music_note, size: 15, color: Colors.white),
+                    Text("@${widget.reel.user}", style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
                     const SizedBox(width: 5),
-                    SizedBox(
-                      width: 200,
-                      child: Text(widget.reel.musicName,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 14)),
-                    ),
+                    const Icon(Icons.verified, color: Color(0xFF00F2EA), size: 16),
                   ],
                 ),
+                const SizedBox(height: 12),
+                Text(widget.reel.caption, style: const TextStyle(fontSize: 15, color: Colors.white, height: 1.4)),
+                const SizedBox(height: 18),
+                _buildMusicMarquee(),
               ],
             ),
           ),
 
-          // Bottom Progress Bar
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: LinearProgressIndicator(
-              value: 0.4, // Mock progress
-              backgroundColor: Colors.white12,
-              valueColor: AlwaysStoppedAnimation<Color>(widget.reel.themeColor),
-              minHeight: 2,
-            ),
-          ),
-
-          // Double Tap Heart Animation
-          if (showHeart)
+          // Double Tap Heart Burst
+          if (showLargeHeart)
             Center(
-              child: TweenAnimationBuilder(
-                tween: Tween<double>(begin: 0.5, end: 1.2),
-                duration: const Duration(milliseconds: 300),
-                builder: (context, value, child) => Transform.scale(
-                  scale: value,
-                  child: const Icon(Icons.favorite, color: Colors.red, size: 120),
-                ),
+              child: ScaleTransition(
+                scale: CurvedAnimation(parent: _heartController, curve: Curves.elasticOut),
+                child: Icon(Icons.favorite, color: Colors.white.withOpacity(0.9), size: 130, shadows: [
+                  BoxShadow(color: Colors.redAccent.withOpacity(0.5), blurRadius: 40, spreadRadius: 10),
+                ]),
               ),
             ),
         ],
@@ -283,99 +247,113 @@ class _ReelItemState extends State<ReelItem> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildProfile(Reel reel) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(2),
-          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-          child: const CircleAvatar(
-            radius: 25,
-            backgroundImage: NetworkImage("https://i.pravatar.cc/150?u=a"),
-          ),
-        ),
-        if (!reel.isFollowing)
-          Positioned(
-            bottom: -8,
-            left: 18,
-            child: GestureDetector(
-              onTap: () => setState(() => widget.reel.isFollowing = true),
-              child: Container(
-                decoration: const BoxDecoration(color: Colors.pinkAccent, shape: BoxShape.circle),
-                child: const Icon(Icons.add, size: 18, color: Colors.white),
-              ),
-            ),
-          )
-      ],
-    );
-  }
-
-  Widget _buildMusicDisk() {
-    return RotationTransition(
-      turns: _musicController,
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          gradient: const SweepGradient(colors: [Colors.black, Colors.grey, Colors.black]),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white24, width: 4),
-        ),
-        child: const Icon(Icons.music_note, size: 20),
-      ),
-    );
-  }
-
-  Widget _sideAction({required IconData icon, required String label, Color color = Colors.white, VoidCallback? onTap}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Column(
-          children: [
-            Icon(icon, size: 35, color: color),
-            const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+  Widget _buildMeshOverlay() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          stops: const [0.0, 0.4, 0.7, 1.0],
+          colors: [
+            Colors.black.withOpacity(0.5),
+            Colors.transparent,
+            Colors.black.withOpacity(0.2),
+            Colors.black.withOpacity(0.9),
           ],
         ),
       ),
     );
   }
-}
 
-// --- Comment Bottom Sheet ---
-class CommentSheet extends StatelessWidget {
-  const CommentSheet({super.key});
+  Widget _buildProfile(bool viral) {
+    return Stack(
+      alignment: Alignment.bottomCenter,
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(2.5),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: SweepGradient(colors: viral ? [Colors.cyan, Colors.purple, Colors.orange, Colors.cyan] : [Colors.white24, Colors.white24]),
+          ),
+          child: const CircleAvatar(radius: 28, backgroundImage: NetworkImage("https://i.pravatar.cc/150?u=22")),
+        ),
+        Positioned(
+          bottom: -8,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF0050),
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 5)],
+            ),
+            child: const Icon(Icons.add, color: Colors.white, size: 14),
+          ),
+        )
+      ],
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          const Text("12.5K Comments", style: TextStyle(fontWeight: FontWeight.bold)),
-          const Divider(height: 30),
-          Expanded(
-            child: ListView.builder(
-              itemCount: 10,
-              itemBuilder: (context, index) => ListTile(
-                leading: const CircleAvatar(backgroundColor: Colors.blueGrey),
-                title: Text("User_$index", style: const TextStyle(fontSize: 13, color: Colors.grey)),
-                subtitle: const Text("This is a flashy Reel! 🔥 Keep it up.", style: TextStyle(color: Colors.white)),
-                trailing: const Icon(Icons.favorite_border, size: 15),
+  Widget _squishButton(IconData icon, String label, Color color, VoidCallback onTap) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(50),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  height: 52, width: 52,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white24, width: 0.8),
+                  ),
+                  child: Icon(icon, color: color, size: 28),
+                ),
               ),
             ),
-          ),
-          TextField(
-            decoration: InputDecoration(
-              hintText: "Add comment...",
-              suffixIcon: const Icon(Icons.alternate_email, color: Colors.pinkAccent),
-              filled: true,
-              fillColor: Colors.white10,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-            ),
-          ),
+            const SizedBox(height: 6),
+            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMusicMarquee() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.music_note_rounded, size: 16, color: Colors.white),
+          const SizedBox(width: 8),
+          const Text("Original Sound • ", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+          Text(widget.reel.music, style: const TextStyle(fontSize: 13, color: Colors.white70)),
         ],
+      ),
+    );
+  }
+
+  Widget _rotatingMusicDisk() {
+    return RotationTransition(
+      turns: _diskController,
+      child: Container(
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+
+          border: Border.all(color: Colors.white10, width: 4),
+        ),
+        child: const CircleAvatar(radius: 12, backgroundColor: Colors.black, child: Icon(Icons.audiotrack_rounded, size: 12, color: Colors.white38)),
       ),
     );
   }
