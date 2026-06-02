@@ -37,7 +37,25 @@ child: Center(
 children: [
 Icon(Icons.lock),
   SizedBox(height: 20,),
-  Text("my login page"),
+  Text("Welcome back",
+    style: TextStyle(
+      fontSize: 28,
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+  SizedBox(height: 20,),
+  Text("Login to your account",
+  style: TextStyle(
+    color: Colors.grey,
+  )
+  ),
+ SizedBox(height: 30,),
+  TextField(
+    decoration: InputDecoration(
+      hintText: "Email",
+      border: OutlineInputBorder(),
+    ),
+  )
 ],
   ),
 ),
