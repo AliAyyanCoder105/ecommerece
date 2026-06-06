@@ -1,7 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:untitled3/practice.dart';
+
 
 void main(){
   runApp(MyApp());
@@ -29,7 +29,7 @@ class _loginState extends State<login> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.lightBlueAccent,
+      backgroundColor: Colors.white,
 body: Padding(padding: EdgeInsets.symmetric(horizontal: 25),
 child: Center(
   child: Column(
@@ -55,7 +55,14 @@ Icon(Icons.lock),
       hintText: "Email",
       border: OutlineInputBorder(),
     ),
-  )
+  ),
+  SizedBox(height: 20,),
+  TextField(
+    decoration: InputDecoration(
+      hintText: "Password",
+      border: OutlineInputBorder(),
+    ),
+  ),
 ],
   ),
 ),
